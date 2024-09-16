@@ -4,10 +4,10 @@ const cors = require('cors');
 const app = express();
 const BodyParser = require('body-parser');
 const DNS = require('node:dns');
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+//mongoose.connect(process.env.MONGO_URI, {
+  //useNewUrlParser: true,
+  //useUnifiedTopology: true,
+//});
 // Basic Configuration
 const port = process.env.PORT || 3000;
 app.use(cors());
