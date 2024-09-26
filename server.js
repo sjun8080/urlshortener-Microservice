@@ -1,100 +1,65 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 const app = express();
-const BodyParser = require('body-parser');
-const DNS = require('node:dns');
-//mongoose.connect(process.env.MONGO_URI, {
-  //useNewUrlParser: true,
-  //useUnifiedTopology: true,
-//});
+
 // Basic Configuration
 const port = process.env.PORT || 3000;
-app.use(cors());
-app.use('/public', express.static(`${process.cwd()}/public`));
-app.get('/', function(req, res) {
-  res.sendFile(process.cwd() + '/views/index.html');
+
+app.use(cors()); //Middlewear-to handle 
+app.use(express.urlencoded({ extended: true }));
+
+app.use("/public", express.static(`${process.cwd()}/public`));
+
+app.get("/", function (req, res) {
+  res.sendFile(process.cwd() + "/views/index.html");
 });
-app.use(BodyParser.urlencoded(
-  {
-    extended: false
+
+// Your first API endpoint
+app.get("/api/hello", function (req, res) {
+  res.json({ greeting: "hello API" });
+});
+
+const originalUrls = []; //array
+const shortUrls = [];
+
+app.post('/api/shorturl', (req, res) => {
+  const url = req.body.url;
+  const indexNo = originalUrls.indexOf(url);
+  //if the url matches with originalUrl 
+  
+  if(!url.includes("https://") && !url.includes("http://")) {
+    return res.json({ error: 'invalid url' })
   }
-));
-const URLs = [];    
-let id = 0;       
 
+  if (indexNo < 0) {// "<0" means not able to find it (do not exist)
+    originalUrls.push(url); //google.com
+    shortUrls.push(shortUrls.length); //0 because there is nothing in shortUrls array[]. Push (0) 
 
-app.post('/api/shorturl', (req, rsp) => {
-
-  const { url: _url } = req.body;
-
-
-  if (_url === "") {
-    res.json({
-      "error": "invalid url"
+    return res.json({
+      original_url: url,
+      short_url: shortUrls.length - 1 //because it should be '0'
     });
-  }
+  };
 
-
-  const shortenedURL = _url.replace(/(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/, '');
-
-  let urlCheck;
-  try {
-    urlCheck = new URL(_url);
-  } catch (err) {
-    rsp.json({
-      "error": "invalid url"
-    });
-  }
-
-
-  DNS.lookup(shortenedURL, (err) => {if (err) {
-      rsp.json({
-        "error": "invalid url"
-      });
-
-
-    } else {
-
-      const urlIsReal = URLs.find(l => l.original_url === _url)
-      if (urlIsReal) {
-        rsp.json({
-          "original_url": _url,
-          "short_url": id
-        });
-      } else {
-        ++id;
-
-
-        const urlObj = {
-          "original_url": _url,
-          "short_url": `${id}`
-        };
-
-      URLs.push(urlObj);
-        rsp.json({
-          "original_url": _url,
-          "short_url": id
-        });
-      }
-    }
+  return res.json({
+    original_url: url,
+    short_url: shortUrls[indexNo]
   });
 });
 
-app.get('/api/shorturl/:id', (req, rsp) => {
-const { id: _id } = req.params;
-const shortUrlIsReal = URLs.find(sl => sl.short_url === _id);
+app.get("/api/shorturl/:shorturl", (req, res) => {
+  const shorturl = parseInt(req.params.shorturl)
+  const indexNo = shortUrls.indexOf(shorturl)
 
+  if(indexNo < 0) {
+    return res.json({
+      "error": "No short URL found for the given input"
+    })
+}
+  res.redirect(originalUrls[indexNo])
+})       
 
-  if (shortUrlIsReal) {
-    rsp.redirect(shortUrlIsReal.original_url);
-  } else {
-    rsp.json({
-      "error": "invalid url"
-    });
-  }
-});
-
-app.listen(port, function() {
+app.listen(port, function () {
   console.log(`Listening on port ${port}`);
 });
